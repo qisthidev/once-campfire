@@ -51,3 +51,77 @@ For example:
       --env VAPID_PRIVATE_KEY=$YOUR_PRIVATE_KEY \
       --env SSL_DOMAIN=chat.example.com \
       campfire
+
+## Deploying with Docker Compose
+
+For easier deployment and development, you can use Docker Compose which automatically sets up the Rails application with Redis. The setup uses separate compose files for different environments.
+
+### Development
+
+For development with live code reloading and debugging capabilities:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+Development features:
+- Volume mounting for live code reloading
+- Interactive TTY for debugging
+- Development environment settings
+- Debug logging enabled
+
+### Production Deployment
+
+For production deployment:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+**Important**: Before running in production, you need to set the following environment variables in your deployment environment or modify `docker-compose.prod.yml`:
+
+- `RAILS_MASTER_KEY` - your Rails master key for encrypted credentials
+- `SECRET_KEY_BASE` - generate with `rails secret`
+- `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` - for Web Push notifications
+- `SENTRY_DSN` - for error reporting (optional)
+- `SSL_DOMAIN` - for automatic SSL via Let's Encrypt (optional)
+
+You can set these by editing the environment section in `docker-compose.prod.yml` or by using an external secrets management system.
+
+### Docker Compose Files Structure
+
+- **`docker-compose.yml`**: Base configuration with common services
+- **`docker-compose.dev.yml`**: Development-specific overrides and settings
+- **`docker-compose.prod.yml`**: Production-specific configuration and environment variables
+
+### Services
+
+- **web**: The Rails application (available on port 3000)
+- **redis**: Redis server for caching and background jobs (available on port 6379)
+
+### Persistent Data
+
+The following volumes are created for data persistence:
+- `sqlite_data`: SQLite database files
+- `redis_data`: Redis persistence
+- `rails_tmp`: Temporary files
+- `rails_log`: Application logs
+
+### Quick Commands
+
+```bash
+# Development
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# Production
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# View logs
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+
+# Run Rails console (production)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web rails console
+
+# Stop services
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+```

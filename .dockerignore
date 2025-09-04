@@ -9,7 +9,6 @@
 
 # Ignore all environment files.
 /.env*
-!/.env.example
 
 # Ignore all logfiles and tempfiles.
 /log/*
@@ -44,6 +43,7 @@
 
 # Ignore ignore
 .dockerignore
+docker-compose*.yml
 
 # Ignore test files
 /test/

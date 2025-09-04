@@ -1,0 +1,25 @@
+# Base Docker Compose configuration
+# Use with docker-compose.dev.yml or docker-compose.prod.yml
+#
+# Development: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  web:
+    build: .
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  sqlite_data:
+  redis_data:
+  rails_tmp:
+  rails_log:
