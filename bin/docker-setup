@@ -2,7 +2,16 @@
 
 set -e
 
-echo "🐳 Setting up Campfire with Docker Compose..."
+# Default to development if no environment specified
+ENVIRONMENT=${1:-dev}
+
+if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
+    echo "❌ Invalid environment. Use 'dev' or 'prod'."
+    echo "Usage: $0 [dev|prod]"
+    exit 1
+fi
+
+echo "🐳 Setting up Campfire with Docker Compose ($ENVIRONMENT environment)..."
 
 # Check if Docker and Docker Compose are installed
 if ! command -v docker &> /dev/null; then
@@ -15,23 +24,36 @@ if ! command -v docker compose &> /dev/null; then
     exit 1
 fi
 
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    echo "📝 Creating .env file from template..."
-    cp .env.example .env
-    echo "✅ Created .env file. Please edit it with your configuration before running the application."
+# Set compose files based on environment
+COMPOSE_FILES="-f docker-compose.yml -f docker-compose.${ENVIRONMENT}.yml"
+
+if [ "$ENVIRONMENT" = "prod" ]; then
     echo ""
-    echo "Important: Set the following required variables in .env:"
-    echo "- RAILS_MASTER_KEY (generate with: docker compose run --rm web rails secret)"
-    echo "- VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (generate with Web Push library)"
+    echo "⚠️  PRODUCTION DEPLOYMENT"
     echo ""
-else
-    echo "✅ .env file already exists"
+    echo "Important: Make sure to configure the following environment variables"
+    echo "in docker-compose.prod.yml before deploying:"
+    echo "- RAILS_MASTER_KEY (your Rails master key)"
+    echo "- SECRET_KEY_BASE (generate with: rails secret)"
+    echo "- VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (for Web Push notifications)"
+    echo "- SENTRY_DSN (optional, for error reporting)"
+    echo "- SSL_DOMAIN (optional, for automatic SSL)"
+    echo ""
+    read -p "Have you configured these variables? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Please configure the environment variables in docker-compose.prod.yml first."
+        exit 1
+    fi
 fi
 
 # Build and start services
 echo "🚀 Building and starting services..."
-docker compose up -d --build
+if [ "$ENVIRONMENT" = "prod" ]; then
+    docker compose $COMPOSE_FILES up -d --build
+else
+    docker compose $COMPOSE_FILES up --build
+fi
 
 echo ""
 echo "✅ Campfire is starting up!"
@@ -41,10 +63,18 @@ echo "- Web application: http://localhost:3000"
 echo "- Redis: localhost:6379"
 echo ""
 echo "Useful commands:"
-echo "- View logs: docker compose logs -f"
-echo "- Stop services: docker compose down"
-echo "- Restart services: docker compose restart"
-echo "- Run Rails console: docker compose exec web rails console"
-echo "- Run database migrations: docker compose exec web rails db:migrate"
+echo "- View logs: docker compose $COMPOSE_FILES logs -f"
+echo "- Stop services: docker compose $COMPOSE_FILES down"
+echo "- Restart services: docker compose $COMPOSE_FILES restart"
+echo "- Run Rails console: docker compose $COMPOSE_FILES exec web rails console"
+echo "- Run database migrations: docker compose $COMPOSE_FILES exec web rails db:migrate"
+echo ""
+if [ "$ENVIRONMENT" = "dev" ]; then
+    echo "🚀 Development mode: Code changes will be reflected automatically"
+    echo "   Press Ctrl+C to stop the services"
+else
+    echo "🚀 Production mode: Services are running in the background"
+    echo "   Use 'docker compose $COMPOSE_FILES down' to stop"
+fi
 echo ""
 echo "Note: The application may take a few moments to fully start up."

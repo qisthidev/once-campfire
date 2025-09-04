@@ -1,0 +1,57 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - RAILS_ENV=development
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite3:storage/db/development.sqlite3
+      - RAILS_LOG_LEVEL=debug
+      - HTTP_IDLE_TIMEOUT=60
+      - HTTP_READ_TIMEOUT=300
+      - HTTP_WRITE_TIMEOUT=300
+      # Development-specific settings
+      - RAILS_SERVE_STATIC_FILES=true
+      - RAILS_LOG_TO_STDOUT=true
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+      - node_modules:/rails/node_modules
+      - rails_tmp:/rails/tmp
+      - rails_log:/rails/log
+      - sqlite_data:/rails/storage/db
+    depends_on:
+      - redis
+    restart: unless-stopped
+    command: ["bin/dev"]
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes
+
+volumes:
+  sqlite_data:
+  redis_data:
+  rails_tmp:
+  rails_log:
+  bundle_cache:
+  node_modules:

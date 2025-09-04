@@ -1,0 +1,62 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - RAILS_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite3:storage/db/production.sqlite3
+      - RAILS_LOG_LEVEL=info
+      - HTTP_IDLE_TIMEOUT=60
+      - HTTP_READ_TIMEOUT=300
+      - HTTP_WRITE_TIMEOUT=300
+      # Production-specific settings
+      - RAILS_SERVE_STATIC_FILES=true
+      - RAILS_LOG_TO_STDOUT=true
+      - BUNDLE_DEPLOYMENT=1
+      - BUNDLE_WITHOUT=development:test
+      # Security settings
+      - RAILS_FORCE_SSL=false
+      # Set these in your deployment environment:
+      # - RAILS_MASTER_KEY=your_master_key_here
+      # - SECRET_KEY_BASE=your_secret_key_base_here
+      # - VAPID_PUBLIC_KEY=your_vapid_public_key
+      # - VAPID_PRIVATE_KEY=your_vapid_private_key
+      # - SENTRY_DSN=your_sentry_dsn (optional)
+      # - SSL_DOMAIN=your.domain.com (optional)
+    volumes:
+      - sqlite_data:/rails/storage/db
+      - rails_tmp:/rails/tmp
+      - rails_log:/rails/log
+      - rails_public:/rails/public
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes
+
+volumes:
+  sqlite_data:
+  redis_data:
+  rails_tmp:
+  rails_log:
+  rails_public:
