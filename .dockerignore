@@ -44,6 +44,7 @@
 
 # Ignore ignore
 .dockerignore
+docker-compose*.yml
 
 # Ignore test files
 /test/

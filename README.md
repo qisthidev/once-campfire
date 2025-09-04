@@ -51,3 +51,51 @@ For example:
       --env VAPID_PRIVATE_KEY=$YOUR_PRIVATE_KEY \
       --env SSL_DOMAIN=chat.example.com \
       campfire
+
+## Deploying with Docker Compose
+
+For easier deployment and development, you can use Docker Compose which automatically sets up the Rails application with Redis:
+
+### Production Deployment
+
+1. Copy the environment template and configure your variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and set your production values:
+   - `RAILS_MASTER_KEY` - your Rails master key for encrypted credentials
+   - `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` - for Web Push notifications
+   - `SENTRY_DSN` - for error reporting (optional)
+
+3. Deploy the application:
+   ```bash
+   docker compose up -d
+   ```
+
+The application will be available at `http://localhost:3000`.
+
+### Development with Docker Compose
+
+For development, the `docker-compose.override.yml` file automatically configures:
+- Volume mounting for live code reloading
+- Development environment settings
+- Interactive TTY for debugging
+
+Simply run:
+```bash
+docker compose up
+```
+
+### Docker Compose Services
+
+- **web**: The Rails application (available on port 3000)
+- **redis**: Redis server for caching and background jobs (available on port 6379)
+
+### Persistent Data
+
+The following volumes are created for data persistence:
+- `sqlite_data`: SQLite database files
+- `redis_data`: Redis persistence
+- `rails_tmp`: Temporary files
+- `rails_log`: Application logs
